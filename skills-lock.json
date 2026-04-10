@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "clerk-orgs": {
+      "source": "clerk/skills",
+      "sourceType": "github",
+      "computedHash": "5b6de983c683f032568ff4f8347ada85c53af852725134aeb042972097d6521e"
+    },
+    "mobile-design": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "8f79c8ffdacb2d221cc6a2fb4527b80b6cc2b07ba8f3cb95fb572ec237942f3e"
+    },
+    "odoo-development": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "computedHash": "614ede59903cdd3e438ab902e8761353a420f99e3065fc590915f8bd58a18e0f"
+    },
+    "secure-code-guardian": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "b3632c7f906f6c21946d17d11355f4c21eea7a4ab98d2d77624467c2dbfa54c3"
+    }
+  }
+}

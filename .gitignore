@@ -1,0 +1,12 @@
+node_modules/
+.dist/
+.wrangler/
+dist/
+.env
+.env.local
+*.db
+*.sqlite
+.DS_Store
+*.log
+pnpm-debug.log
+.vite/

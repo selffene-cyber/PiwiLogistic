@@ -1,0 +1,29 @@
+{
+  "name": "@piwi/db",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "wrangler d1 migrations apply piwi-logistic-db --local",
+    "migrate:remote": "wrangler d1 migrations apply piwi-logistic-db --remote",
+    "studio": "drizzle-kit studio",
+    "seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.40.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250400.0",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "better-sqlite3": "^11.0.0",
+    "drizzle-kit": "^0.30.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
+  }
+}
