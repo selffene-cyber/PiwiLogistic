@@ -1,5 +1,5 @@
 ﻿import { Hono } from 'hono';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, inArray } from 'drizzle-orm';
 import type { Env, JWTPayload } from '../types';
 import { getDb } from '../lib/db';
 import * as schema from '../../../../packages/db/src';
@@ -12,7 +12,7 @@ async function calculateMetrics(db: ReturnType<typeof import('../lib/db')['getDb
       eq(schema.rutas.tenantId, tenantId),
       gte(schema.rutas.fecha, startDate),
       lte(schema.rutas.fecha, endDate),
-      eq(schema.rutas.estado, 'cerrada'),
+      inArray(schema.rutas.estado, ['cerrada', 'reabierta']),
     ));
 
   if (routes.length === 0) {
@@ -20,6 +20,7 @@ async function calculateMetrics(db: ReturnType<typeof import('../lib/db')['getDb
       totalRutas: 0,
       totalCajasDespachadas: 0,
       totalCajasEntregadas: 0,
+      totalCajasDevueltas: 0,
       totalIngresos: 0,
       totalCostos: 0,
       totalBonos: 0,
@@ -34,22 +35,23 @@ async function calculateMetrics(db: ReturnType<typeof import('../lib/db')['getDb
   const routeIds = routes.map((r) => r.id);
 
   let totalCajasDespachadas = 0;
-  let totalIngresos = 0;
-
   for (const routeId of routeIds) {
     const guides = await db.select().from(schema.guiasDespacho)
       .where(eq(schema.guiasDespacho.rutaId, routeId));
     for (const g of guides) {
       totalCajasDespachadas += g.totalCajas ?? 0;
-      totalIngresos += g.totalMonto ?? 0;
     }
   }
 
   let totalCajasEntregadas = 0;
+  let totalCajasDevueltas = 0;
+  let totalIngresos = 0;
   for (const routeId of routeIds) {
     const deliveries = await db.select().from(schema.entregas)
       .where(eq(schema.entregas.rutaId, routeId));
     totalCajasEntregadas += deliveries.reduce((sum, e) => sum + e.cajasEntregadas, 0);
+    totalCajasDevueltas += deliveries.reduce((sum, e) => sum + e.cajasDevueltas, 0);
+    totalIngresos += deliveries.reduce((sum, e) => sum + (e.montoCobrado ?? 0), 0);
   }
 
   let totalCostos = 0;
@@ -88,6 +90,7 @@ async function calculateMetrics(db: ReturnType<typeof import('../lib/db')['getDb
     totalRutas: routes.length,
     totalCajasDespachadas,
     totalCajasEntregadas,
+    totalCajasDevueltas,
     totalIngresos,
     totalCostos,
     totalBonos,

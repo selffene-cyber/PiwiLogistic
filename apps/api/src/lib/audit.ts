@@ -10,16 +10,20 @@ export async function logAudit(d1: D1Database, params: {
   valoresAnteriores?: unknown;
   valoresNuevos?: unknown;
 }) {
-  const db = getDb(d1);
-  await db.insert(schema.auditLogs).values({
-    id: crypto.randomUUID(),
-    tenantId: params.tenantId,
-    userId: params.userId,
-    entidad: params.entidad,
-    entidadId: params.entidadId,
-    accion: params.accion,
-    valoresAnteriores: params.valoresAnteriores ? JSON.stringify(params.valoresAnteriores) : null,
-    valoresNuevos: params.valoresNuevos ? JSON.stringify(params.valoresNuevos) : null,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    const db = getDb(d1);
+    await db.insert(schema.auditLogs).values({
+      id: crypto.randomUUID(),
+      tenantId: params.tenantId,
+      userId: params.userId ?? null,
+      entidad: params.entidad,
+      entidadId: params.entidadId,
+      accion: params.accion,
+      valoresAnteriores: params.valoresAnteriores ? JSON.stringify(params.valoresAnteriores) : null,
+      valoresNuevos: params.valoresNuevos ? JSON.stringify(params.valoresNuevos) : null,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('Audit log failed:', err);
+  }
 }

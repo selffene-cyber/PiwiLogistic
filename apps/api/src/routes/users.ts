@@ -6,6 +6,7 @@ import { getDb } from '../lib/db';
 import * as schema from '../../../../packages/db/src';
 import { hashPassword } from '../lib/auth';
 import { logAudit } from '../lib/audit';
+import { requireRole } from '../middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: { jwtPayload: JWTPayload } }>();
 
@@ -223,6 +224,20 @@ app.patch('/:id/status', async (c) => {
   });
 
   return c.json({ success: true, data: { id, activo: parsed.data.activo } });
+});
+
+app.delete('/:id', requireRole('ADMIN'), async (c) => {
+  const payload = c.get('jwtPayload') as JWTPayload;
+  const db = getDb(c.env.DB);
+  const id = c.req.param('id');
+  if (id === payload.sub) return c.json({ success: false, error: 'Cannot delete yourself' }, 400);
+  const existing = await db.select().from(schema.users)
+    .where(and(eq(schema.users.id, id), eq(schema.users.tenantId, payload.tenantId)))
+    .get();
+  if (!existing) return c.json({ success: false, error: 'User not found' }, 404);
+  await db.delete(schema.users).where(eq(schema.users.id, id));
+  try { await logAudit(c.env.DB, { tenantId: payload.tenantId, userId: payload.sub, entidad: 'users', entidadId: id, accion: 'delete', valoresAnteriores: { nombre: existing.nombre, email: existing.email } }); } catch {}
+  return c.json({ success: true, data: { id } });
 });
 
 export default app;

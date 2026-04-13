@@ -5,6 +5,7 @@ import type { Env, JWTPayload } from '../types';
 import { getDb } from '../lib/db';
 import * as schema from '../../../../packages/db/src';
 import { requireRole } from '../middleware/auth';
+import { logAudit } from '../lib/audit';
 
 const app = new Hono<{ Bindings: Env; Variables: { jwtPayload: JWTPayload } }>();
 
@@ -109,6 +110,19 @@ app.get('/bonuses', async (c) => {
     .where(and(...conditions));
 
   return c.json({ success: true, data: bonuses });
+});
+
+app.delete('/bonus-tiers/:id', requireRole('ADMIN'), async (c) => {
+  const payload = c.get('jwtPayload') as JWTPayload;
+  const db = getDb(c.env.DB);
+  const id = c.req.param('id');
+  const existing = await db.select().from(schema.bonusTiers)
+    .where(and(eq(schema.bonusTiers.id, id), eq(schema.bonusTiers.tenantId, payload.tenantId)))
+    .get();
+  if (!existing) return c.json({ success: false, error: 'Bonus tier not found' }, 404);
+  await db.update(schema.bonusTiers).set({ activo: false, updatedAt: new Date().toISOString() }).where(eq(schema.bonusTiers.id, id));
+  try { await logAudit(c.env.DB, { tenantId: payload.tenantId, userId: payload.sub, entidad: 'bonusTiers', entidadId: id, accion: 'delete', valoresAnteriores: existing }); } catch {}
+  return c.json({ success: true, data: { id } });
 });
 
 export default app;

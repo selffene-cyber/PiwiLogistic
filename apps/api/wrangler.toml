@@ -6,8 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "piwi-logistic-db"
-database_id = "local-dev"
+database_id = "c89d51c8-7584-4fb6-ac14-69fd9c4c5e10"
+migrations_dir = "../../packages/db/migrations"
 
 [vars]
-JWT_SECRET = "change-me-in-production"
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"

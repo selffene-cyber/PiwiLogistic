@@ -5,6 +5,7 @@ import type { Env, JWTPayload } from '../types';
 import { getDb } from '../lib/db';
 import * as schema from '../../../../packages/db/src';
 import { logAudit } from '../lib/audit';
+import { requireRole } from '../middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: { jwtPayload: JWTPayload } }>();
 
@@ -105,6 +106,19 @@ app.put('/:id', async (c) => {
     .get();
 
   return c.json({ success: true, data: boxType });
+});
+
+app.delete('/:id', requireRole('ADMIN'), async (c) => {
+  const payload = c.get('jwtPayload') as JWTPayload;
+  const db = getDb(c.env.DB);
+  const id = c.req.param('id');
+  const existing = await db.select().from(schema.tiposCaja)
+    .where(and(eq(schema.tiposCaja.id, id), eq(schema.tiposCaja.tenantId, payload.tenantId)))
+    .get();
+  if (!existing) return c.json({ success: false, error: 'Box type not found' }, 404);
+  await db.delete(schema.tiposCaja).where(eq(schema.tiposCaja.id, id));
+  try { await logAudit(c.env.DB, { tenantId: payload.tenantId, userId: payload.sub, entidad: 'tiposCaja', entidadId: id, accion: 'delete', valoresAnteriores: existing }); } catch {}
+  return c.json({ success: true, data: { id } });
 });
 
 export default app;

@@ -43,7 +43,7 @@ function SidebarContent({ onNavigate }: { onNavigate: (to: string) => void }) {
   const logout = useAuthStore((s) => s.logout);
 
   const visibleItems = sidebarItems.filter(
-    (item) => !item.roles || (user && item.roles.includes(user.role))
+    (item) => !item.roles || (user && item.roles.includes(user.role?.codigo ?? ''))
   );
 
   return (
@@ -155,8 +155,8 @@ export default function Layout() {
             <div className="hidden md:block" />
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.role}</p>
+                <p className="text-sm font-medium text-gray-900">{user?.nombre}</p>
+                <p className="text-xs text-gray-500">{user?.role?.nombre}</p>
               </div>
               <button
                 onClick={() => useAuthStore.getState().logout()}

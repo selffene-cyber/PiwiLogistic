@@ -94,28 +94,4 @@ app.post('/logout', async (c) => {
   return c.json({ success: true });
 });
 
-app.get('/me', async (c) => {
-  const payload = c.get('jwtPayload') as JWTPayload;
-  const db = getDb(c.env.DB);
-
-  const result = await db.select({
-    user: schema.users,
-    role: schema.roles,
-  }).from(schema.users)
-    .leftJoin(schema.roles, eq(schema.users.roleId, schema.roles.id))
-    .where(eq(schema.users.id, payload.sub))
-    .get();
-
-  if (!result?.user) {
-    return c.json({ success: false, error: 'User not found' }, 404);
-  }
-
-  const { passwordHash, ...userSafe } = result.user;
-
-  return c.json({
-    success: true,
-    data: { ...userSafe, role: result.role },
-  });
-});
-
 export default app;

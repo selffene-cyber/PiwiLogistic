@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   CubeIcon,
@@ -11,6 +12,7 @@ interface DashboardMetrics {
   totalRutas: number;
   totalCajasDespachadas: number;
   totalCajasEntregadas: number;
+  totalCajasDevueltas: number;
   totalIngresos: number;
   totalCostos: number;
   totalBonos: number;
@@ -26,17 +28,19 @@ function formatCurrency(value: number): string {
 }
 
 export default function DashboardPage() {
+  const [period, setPeriod] = useState<'today' | 'week' | 'month'>('today');
+
   const { data: metrics, isLoading } = useQuery({
-    queryKey: ['dashboard', 'today'],
+    queryKey: ['dashboard', period],
     queryFn: async () => {
-      const res = await api.get('/api/dashboard/today');
+      const res = await api.get(`/api/dashboard/${period}`);
       const json = await res.json();
       return json.data as DashboardMetrics;
     },
   });
 
   const kpis = [
-    { label: 'Cajas Hoy', value: metrics?.totalCajasEntregadas ?? 0, icon: CubeIcon, color: 'text-primary-500', format: (v: number) => v.toLocaleString() },
+    { label: 'Cajas Entregadas', value: metrics?.totalCajasEntregadas ?? 0, icon: CubeIcon, color: 'text-primary-500', format: (v: number) => v.toLocaleString() },
     { label: 'Ingresos', value: metrics?.totalIngresos ?? 0, icon: CurrencyDollarIcon, color: 'text-green-500', format: formatCurrency },
     { label: 'Costos', value: metrics?.totalCostos ?? 0, icon: ArrowTrendingDownIcon, color: 'text-red-500', format: formatCurrency },
     { label: 'Utilidad', value: metrics?.utilidad ?? 0, icon: ChartBarIcon, color: 'text-primary-600', format: formatCurrency },
@@ -50,9 +54,20 @@ export default function DashboardPage() {
     { label: 'Rutas Cerradas', value: metrics.totalRutas.toString() },
   ] : [];
 
+  const periodLabels: Record<string, string> = { today: 'Hoy', week: 'Semana', month: 'Mes' };
+
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4">Dashboard</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+        <div className="flex gap-1 bg-white border border-gray-200 rounded-md p-0.5">
+          {(['today', 'week', 'month'] as const).map((p) => (
+            <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1 rounded text-xs font-medium ${period === p ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+              {periodLabels[p]}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
@@ -74,19 +89,59 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {metrics && performanceMetrics.length > 0 && (
-            <div className="bg-white rounded-md border border-gray-200 p-4">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">KPIs</h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {performanceMetrics.map((m) => (
-                  <div key={m.label} className="text-center">
-                    <p className="text-lg font-bold text-gray-900">{m.value}</p>
-                    <p className="text-xs text-gray-500">{m.label}</p>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {metrics && performanceMetrics.length > 0 && (
+              <div className="bg-white rounded-md border border-gray-200 p-4">
+                <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">KPIs - {periodLabels[period]}</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {performanceMetrics.map((m) => (
+                    <div key={m.label} className="text-center">
+                      <p className="text-lg font-bold text-gray-900">{m.value}</p>
+                      <p className="text-xs text-gray-500">{m.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
+
+            <div className="bg-white rounded-md border border-gray-200 p-4">
+              <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Resumen Financiero</h2>
+              {metrics ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Cajas Despachadas</span>
+                    <span className="font-medium">{metrics.totalCajasDespachadas.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Cajas Entregadas</span>
+                    <span className="font-medium text-green-600">{metrics.totalCajasEntregadas.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Cajas Devueltas</span>
+                    <span className="font-medium text-red-600">{metrics.totalCajasDevueltas.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Ingresos</span>
+                    <span className="font-medium text-green-600">{formatCurrency(metrics.totalIngresos)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Costos</span>
+                    <span className="font-medium text-red-600">{formatCurrency(metrics.totalCostos)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Bonos</span>
+                    <span className="font-medium">{formatCurrency(metrics.totalBonos)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t pt-2 font-bold">
+                    <span>Utilidad</span>
+                    <span className={metrics.utilidad >= 0 ? 'text-green-600' : 'text-red-600'}>{formatCurrency(metrics.utilidad)}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-4">Sin datos para el periodo</p>
+              )}
             </div>
-          )}
+          </div>
         </>
       )}
     </div>

@@ -1,0 +1,1 @@
+INSERT INTO roles (id, tenant_id, nombre, codigo, descripcion, permisos, created_at, updated_at) VALUES ('role-condu-00000000-0000-0000-0000-000000000001', 'tenant-gofex-00000000-0000-0000-0000-000000000001', 'Conductor', 'CONDUCTOR', 'Ve su ruta asignada', '{"routes": "read_own"}', '2026-04-10T00:00:00.000Z', '2026-04-10T00:00:00.000Z');

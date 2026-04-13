@@ -21,8 +21,8 @@ const createRouteSchema = z.object({
   fecha: z.string().min(1),
   camionId: z.string().min(1),
   conductorId: z.string().min(1),
-  peoneta1Id: z.string().optional(),
-  peoneta2Id: z.string().optional(),
+  peoneta1Id: z.string().nullable().optional(),
+  peoneta2Id: z.string().nullable().optional(),
 });
 
 const updateRouteSchema = z.object({
@@ -47,7 +47,23 @@ app.get('/', async (c) => {
   const routes = await db.select().from(schema.rutas)
     .where(and(...conditions));
 
-  return c.json({ success: true, data: routes });
+  const camiones = await db.select({ id: schema.camiones.id, patente: schema.camiones.patente, marca: schema.camiones.marca, modelo: schema.camiones.modelo }).from(schema.camiones)
+    .where(eq(schema.camiones.tenantId, payload.tenantId));
+  const workers = await db.select().from(schema.trabajadores)
+    .where(eq(schema.trabajadores.tenantId, payload.tenantId));
+
+  const camionMap = new Map(camiones.map(c => [c.id, c]));
+  const workerMap = new Map(workers.map(w => [w.id, w]));
+
+  const enrichedRoutes = routes.map(r => ({
+    ...r,
+    camion: camionMap.get(r.camionId) ?? null,
+    conductor: workerMap.get(r.conductorId) ? { nombre: workerMap.get(r.conductorId)!.nombre } : null,
+    peoneta1: r.peoneta1Id && workerMap.get(r.peoneta1Id) ? { nombre: workerMap.get(r.peoneta1Id)!.nombre } : null,
+    peoneta2: r.peoneta2Id && workerMap.get(r.peoneta2Id) ? { nombre: workerMap.get(r.peoneta2Id)!.nombre } : null,
+  }));
+
+  return c.json({ success: true, data: enrichedRoutes });
 });
 
 app.post('/', async (c) => {
@@ -107,10 +123,14 @@ app.get('/:id', async (c) => {
     return c.json({ success: false, error: 'Route not found' }, 404);
   }
 
-  const [guides, deliveries, costos] = await Promise.all([
+  const [guides, deliveries, costos, camion, conductor, peoneta1, peoneta2] = await Promise.all([
     db.select().from(schema.guiasDespacho).where(eq(schema.guiasDespacho.rutaId, id)),
     db.select().from(schema.entregas).where(eq(schema.entregas.rutaId, id)),
     db.select().from(schema.costosOperacion).where(eq(schema.costosOperacion.rutaId, id)),
+    route.camionId ? db.select().from(schema.camiones).where(eq(schema.camiones.id, route.camionId)).get() : Promise.resolve(null),
+    route.conductorId ? db.select().from(schema.trabajadores).where(eq(schema.trabajadores.id, route.conductorId)).get() : Promise.resolve(null),
+    route.peoneta1Id ? db.select().from(schema.trabajadores).where(eq(schema.trabajadores.id, route.peoneta1Id)).get() : Promise.resolve(null),
+    route.peoneta2Id ? db.select().from(schema.trabajadores).where(eq(schema.trabajadores.id, route.peoneta2Id)).get() : Promise.resolve(null),
   ]);
 
   let detalleGdRows: typeof schema.detalleGd.$inferSelect[] = [];
@@ -129,6 +149,10 @@ app.get('/:id', async (c) => {
     success: true,
     data: {
       ...route,
+      camion: camion ? { patente: camion.patente, marca: camion.marca } : null,
+      conductor: conductor ? { nombre: conductor.nombre } : null,
+      peoneta1: peoneta1 ? { nombre: peoneta1.nombre } : null,
+      peoneta2: peoneta2 ? { nombre: peoneta2.nombre } : null,
       guias: guides.map((g) => ({
         ...g,
         detalle: detalleGdRows.filter((d) => d.guiaDespachoId === g.id),
@@ -241,10 +265,9 @@ app.post('/:id/close', async (c) => {
   }
 
   const nowISO = new Date().toISOString();
-  const horaFin = new Date().toTimeString().split(' ')[0];
 
   await db.update(schema.rutas)
-    .set({ estado: 'cerrada', horaFin, cerradaAt: nowISO, cerradaBy: payload.sub, updatedAt: nowISO })
+    .set({ estado: 'cerrada', horaFin: nowISO, cerradaAt: nowISO, cerradaBy: payload.sub, updatedAt: nowISO })
     .where(eq(schema.rutas.id, id));
 
   const config = await db.select().from(schema.tenantConfig)
@@ -403,6 +426,50 @@ app.post('/:id/reopen', requireRole('ADMIN'), async (c) => {
     .get();
 
   return c.json({ success: true, data: route });
+});
+
+app.delete('/:id', requireRole('ADMIN'), async (c) => {
+  const payload = c.get('jwtPayload') as JWTPayload;
+  const db = getDb(c.env.DB);
+  const id = c.req.param('id');
+
+  const existing = await db.select().from(schema.rutas)
+    .where(and(eq(schema.rutas.id, id), eq(schema.rutas.tenantId, payload.tenantId)))
+    .get();
+
+  if (!existing) {
+    return c.json({ success: false, error: 'Route not found' }, 404);
+  }
+
+  const [guides, deliveries, costos, bonosRows] = await Promise.all([
+    db.select().from(schema.guiasDespacho).where(eq(schema.guiasDespacho.rutaId, id)),
+    db.select().from(schema.entregas).where(eq(schema.entregas.rutaId, id)),
+    db.select().from(schema.costosOperacion).where(eq(schema.costosOperacion.rutaId, id)),
+    db.select().from(schema.bonos).where(eq(schema.bonos.rutaId, id)),
+  ]);
+
+  const guideIds = guides.map((g) => g.id);
+  for (const gid of guideIds) {
+    await db.delete(schema.detalleGd).where(eq(schema.detalleGd.guiaDespachoId, gid));
+  }
+  await db.delete(schema.guiasDespacho).where(eq(schema.guiasDespacho.rutaId, id));
+  await db.delete(schema.entregas).where(eq(schema.entregas.rutaId, id));
+  await db.delete(schema.costosOperacion).where(eq(schema.costosOperacion.rutaId, id));
+  await db.delete(schema.bonos).where(eq(schema.bonos.rutaId, id));
+  await db.delete(schema.rutas).where(eq(schema.rutas.id, id));
+
+  try {
+    await logAudit(c.env.DB, {
+      tenantId: payload.tenantId,
+      userId: payload.sub,
+      entidad: 'rutas',
+      entidadId: id,
+      accion: 'delete',
+      valoresAnteriores: { fecha: existing.fecha, estado: existing.estado, guias: guideIds.length, entregas: deliveries.length },
+    });
+  } catch {}
+
+  return c.json({ success: true, data: { id } });
 });
 
 export default app;

@@ -4,7 +4,7 @@ import { verifyToken } from '../lib/auth';
 
 export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
   const path = new URL(c.req.url).pathname;
-  if (path === '/api/health' || path.startsWith('/api/auth/')) {
+  if (path === '/api/health' || path === '/api/auth/login' || path === '/api/auth/refresh' || path === '/api/auth/logout') {
     return next();
   }
 

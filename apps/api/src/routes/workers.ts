@@ -5,6 +5,7 @@ import type { Env, JWTPayload } from '../types';
 import { getDb } from '../lib/db';
 import * as schema from '../../../../packages/db/src';
 import { logAudit } from '../lib/audit';
+import { requireRole } from '../middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: { jwtPayload: JWTPayload } }>();
 
@@ -13,8 +14,8 @@ const createWorkerSchema = z.object({
   rut: z.string().min(1),
   tipoTrabajador: z.enum(['conductor', 'peoneta', 'administrativo']),
   activo: z.boolean().optional(),
-  costoMensualEmpresa: z.number().optional(),
-  fechaIngreso: z.string().optional(),
+  costoMensualEmpresa: z.number().nullable().optional(),
+  fechaIngreso: z.string().nullable().optional(),
 });
 
 const updateWorkerSchema = z.object({
@@ -22,8 +23,8 @@ const updateWorkerSchema = z.object({
   rut: z.string().min(1).optional(),
   tipoTrabajador: z.enum(['conductor', 'peoneta', 'administrativo']).optional(),
   activo: z.boolean().optional(),
-  costoMensualEmpresa: z.number().optional(),
-  fechaIngreso: z.string().optional(),
+  costoMensualEmpresa: z.number().nullable().optional(),
+  fechaIngreso: z.string().nullable().optional(),
 });
 
 app.get('/', async (c) => {
@@ -120,6 +121,19 @@ app.put('/:id', async (c) => {
     .get();
 
   return c.json({ success: true, data: worker });
+});
+
+app.delete('/:id', requireRole('ADMIN'), async (c) => {
+  const payload = c.get('jwtPayload') as JWTPayload;
+  const db = getDb(c.env.DB);
+  const id = c.req.param('id');
+  const existing = await db.select().from(schema.trabajadores)
+    .where(and(eq(schema.trabajadores.id, id), eq(schema.trabajadores.tenantId, payload.tenantId)))
+    .get();
+  if (!existing) return c.json({ success: false, error: 'Worker not found' }, 404);
+  await db.delete(schema.trabajadores).where(eq(schema.trabajadores.id, id));
+  try { await logAudit(c.env.DB, { tenantId: payload.tenantId, userId: payload.sub, entidad: 'trabajadores', entidadId: id, accion: 'delete', valoresAnteriores: existing }); } catch {}
+  return c.json({ success: true, data: { id } });
 });
 
 export default app;

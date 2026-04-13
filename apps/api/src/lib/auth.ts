@@ -2,11 +2,13 @@ import jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcryptjs';
 import type { JWTPayload } from '../types';
 
-const ACCESS_EXPIRY = '15m';
-const REFRESH_EXPIRY = '7d';
+const ACCESS_EXPIRY = '24h';
+const REFRESH_EXPIRY = '30d';
+
+const BCRYPT_ROUNDS = 6;
 
 export async function hashPassword(plain: string): Promise<string> {
-  return bcrypt.hash(plain, 12);
+  return bcrypt.hash(plain, BCRYPT_ROUNDS);
 }
 
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
