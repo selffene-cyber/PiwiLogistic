@@ -214,7 +214,6 @@ app.put('/:id', async (c) => {
     .where(and(eq(schema.guiasDespacho.id, id), eq(schema.guiasDespacho.tenantId, payload.tenantId)))
     .get();
   if (!existing) return c.json({ success: false, error: 'Dispatch guide not found' }, 404);
-  if (existing.estado !== 'abierta') return c.json({ success: false, error: 'Solo se pueden editar guias abiertas' }, 400);
 
   const updateSchema = z.object({
     numeroGd: z.string().min(1).optional(),

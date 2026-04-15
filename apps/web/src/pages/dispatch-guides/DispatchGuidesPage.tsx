@@ -41,6 +41,8 @@ export default function DispatchGuidesPage() {
   const [showClientModal, setShowClientModal] = useState(false);
   const [clientForm, setClientForm] = useState({ ...emptyClientForm });
   const [modalDetailIdx, setModalDetailIdx] = useState<number | null>(null);
+  const [clientSearch, setClientSearch] = useState<Record<number, string>>({});
+  const [clientDropdown, setClientDropdown] = useState<Record<number, boolean>>({});
 
   const { data: guides, isLoading } = useQuery({
     queryKey: ['dispatch-guides', filterRuta],
@@ -286,15 +288,24 @@ export default function DispatchGuidesPage() {
             </div>
             {form.detalle.map((d, i) => (
               <div key={i} className="grid grid-cols-7 gap-2 mb-2 items-end">
-                <div className="col-span-2">
+                <div className="col-span-2 relative">
                   {i === 0 && <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Cliente Interno</label>}
-                  <select value={d.clienteInternoId || ''} onChange={(e) => handleClientSelect(i, e.target.value)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500">
-                    <option value="">Seleccionar cliente</option>
-                    <option value="__add__">+ Agregar cliente</option>
-                    {clients?.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.nombreComercial}</option>
-                    ))}
-                  </select>
+                  <input type="text" placeholder={d.clienteInternoNombre || 'Buscar cliente...'} value={clientSearch[i] ?? ''} onChange={(e) => { setClientSearch({...clientSearch, [i]: e.target.value}); setClientDropdown({...clientDropdown, [i]: true}); }} onFocus={() => setClientDropdown({...clientDropdown, [i]: true})} onBlur={() => setTimeout(() => setClientDropdown({...clientDropdown, [i]: false}), 200)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500" />
+                  {d.clienteInternoId && <span className="absolute right-2 top-1/2 text-xs text-primary-600 font-medium cursor-pointer" style={{transform:'translateY(-50%)'}} onClick={() => { updateDetalle(i, { clienteInternoId: '', clienteInternoNombre: '', direccionInterno: '' }); setClientSearch({...clientSearch, [i]: ''}); }}>x</span>}
+                  {clientDropdown[i] && (
+                    <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      <div className="px-3 py-1.5 text-xs text-primary-600 cursor-pointer hover:bg-primary-50" onMouseDown={() => { setModalDetailIdx(i); setClientForm({...emptyClientForm}); setShowClientModal(true); setClientDropdown({...clientDropdown, [i]: false}); }}>+ Agregar cliente nuevo</div>
+                      {clients?.filter((c: any) => {
+                        const s = (clientSearch[i] ?? '').toLowerCase();
+                        if (!s) return true;
+                        return c.nombreComercial?.toLowerCase().includes(s) || c.rutSap?.toLowerCase().includes(s);
+                      }).slice(0, 50).map((c: any) => (
+                        <div key={c.id} className="px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 truncate" onMouseDown={() => { updateDetalle(i, { clienteInternoId: c.id, clienteInternoNombre: c.nombreComercial, direccionInterno: c.direccion || '' }); setClientSearch({...clientSearch, [i]: ''}); setClientDropdown({...clientDropdown, [i]: false}); }}>
+                          {c.nombreComercial}{c.rutSap ? <span className="text-gray-400 ml-1 text-xs">({c.rutSap})</span> : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="col-span-2">
                   {i === 0 && <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Direccion</label>}
