@@ -12,14 +12,18 @@ interface DispatchGuide {
   tipoGd: string | null;
   estado: string;
   totalCajas: number;
+  totalUc: number;
+  totalPalets: number;
   totalMonto: number;
+  cdId: string | null;
   observaciones: string | null;
   rutaId: string;
   ruta?: { fecha: string; estado: string; conductor?: { nombre: string } };
   detalle?: any[];
 }
 
-interface BoxType { id: string; nombre: string; precioUnitario: number }
+interface BoxType { id: string; nombre: string; precioUnitario: number; litrosPorCaja: number }
+interface DistributionCenter { id: string; nombre: string; codigo: string | null; ciudad: string | null }
 
 const fmt = (v: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(v) || 0);
 
@@ -32,7 +36,7 @@ export default function DispatchGuidesPage() {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role?.codigo === 'ADMIN';
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ numeroGd: '', fecha: new Date().toISOString().split('T')[0], tipoGd: '', observaciones: '', rutaId: '', detalle: [{ ...emptyDetalle }] });
+  const [form, setForm] = useState({ numeroGd: '', fecha: new Date().toISOString().split('T')[0], tipoGd: '', observaciones: '', rutaId: '', cdId: '', totalPalets: '', detalle: [{ ...emptyDetalle }] });
   const [filterRuta, setFilterRuta] = useState('');
   const [showClientModal, setShowClientModal] = useState(false);
   const [clientForm, setClientForm] = useState({ ...emptyClientForm });
@@ -75,6 +79,15 @@ export default function DispatchGuidesPage() {
     },
   });
 
+  const { data: distributionCenters } = useQuery({
+    queryKey: ['distribution-centers'],
+    queryFn: async () => {
+      const res = await api.get('/api/distribution-centers');
+      const json = await res.json();
+      return (json.data as DistributionCenter[]);
+    },
+  });
+
   const createClientMut = useMutation({
     mutationFn: (data: any) => apiPost('/api/clients', data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clients'] }); },
@@ -95,7 +108,7 @@ export default function DispatchGuidesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dispatch-guides'] }),
   });
 
-  const resetForm = () => setForm({ numeroGd: '', fecha: new Date().toISOString().split('T')[0], tipoGd: '', observaciones: '', rutaId: '', detalle: [{ ...emptyDetalle }] });
+  const resetForm = () => setForm({ numeroGd: '', fecha: new Date().toISOString().split('T')[0], tipoGd: '', observaciones: '', rutaId: '', cdId: '', totalPalets: '', detalle: [{ ...emptyDetalle }] });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +117,8 @@ export default function DispatchGuidesPage() {
       fecha: form.fecha,
       observaciones: form.observaciones || undefined,
       rutaId: form.rutaId,
+      cdId: form.cdId || null,
+      totalPalets: Number(form.totalPalets) || 0,
       detalle: form.detalle.filter((d) => d.tipoCajaId && d.cantidad).map((d) => ({
         tipoCajaId: d.tipoCajaId,
         cantidad: Number(d.cantidad),
@@ -245,6 +260,19 @@ export default function DispatchGuidesPage() {
                 <option value="segunda_vuelta">Segunda Vuelta</option>
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Centro Distribucion</label>
+              <select value={form.cdId} onChange={(e) => setForm({ ...form, cdId: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+                <option value="">Sin CD</option>
+                {distributionCenters?.map((dc) => (
+                  <option key={dc.id} value={dc.id}>{dc.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Total Palets</label>
+              <input type="number" value={form.totalPalets} onChange={(e) => setForm({ ...form, totalPalets: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500" placeholder="0" />
+            </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Observaciones</label>
@@ -315,6 +343,8 @@ export default function DispatchGuidesPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Clientes</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total Cajas</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">UC</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Palets</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Monto</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Accion</th>
                 </tr>
@@ -332,6 +362,8 @@ export default function DispatchGuidesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-right">{g.totalCajas}</td>
+                    <td className="px-4 py-3 text-sm text-right">{(g.totalUc ?? 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-right">{g.totalPalets ?? 0}</td>
                     <td className="px-4 py-3 text-sm text-right">{fmt(g.totalMonto)}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">

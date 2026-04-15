@@ -92,6 +92,7 @@ app.post('/', async (c) => {
   const nowISO = new Date().toISOString();
   let totalCajas = 0;
   let totalMonto = 0;
+  let totalUc = 0;
   const detalleValues: any[] = [];
 
   const tipoCajaIds = [...new Set(body.detalle.map((d: any) => d.tipoCajaId))];
@@ -108,9 +109,12 @@ app.post('/', async (c) => {
       return c.json({ success: false, error: `Box type ${item.tipoCajaId} not found` }, 400);
     }
 
+    const litrosPorCaja = tipoCaja.litrosPorCaja ?? 1;
+    const ucTotales = item.cantidad * litrosPorCaja;
     const subtotal = item.cantidad * tipoCaja.precioUnitario;
     totalCajas += item.cantidad;
     totalMonto += subtotal;
+    totalUc += ucTotales;
 
     detalleValues.push({
       id: crypto.randomUUID(),
@@ -121,6 +125,8 @@ app.post('/', async (c) => {
       clienteInternoNombre: item.clienteInternoNombre ?? null,
       direccionInterno: item.direccionInterno ?? null,
       cantidad: item.cantidad,
+      litrosPorCaja,
+      ucTotales,
       precioUnitarioSnapshot: tipoCaja.precioUnitario,
       subtotal,
       createdAt: nowISO,
@@ -138,7 +144,10 @@ app.post('/', async (c) => {
     observaciones: body.observaciones ?? null,
     estado: 'abierta',
     totalCajas,
+    totalUc,
+    totalPalets: body.totalPalets ?? 0,
     totalMonto,
+    cdId: body.cdId ?? null,
     createdAt: nowISO,
     updatedAt: nowISO,
   });
@@ -155,11 +164,11 @@ app.post('/', async (c) => {
       entidad: 'guiasDespacho',
       entidadId: id,
       accion: 'create',
-      valoresNuevos: { numeroGd: body.numeroGd, totalCajas, totalMonto },
+      valoresNuevos: { numeroGd: body.numeroGd, totalCajas, totalUc, totalMonto },
     }).catch(() => {})
   );
 
-  return c.json({ success: true, data: { id, numeroGd: body.numeroGd, estado: 'abierta', totalCajas, totalMonto } }, 201);
+  return c.json({ success: true, data: { id, numeroGd: body.numeroGd, estado: 'abierta', totalCajas, totalUc, totalPalets: body.totalPalets ?? 0, totalMonto, cdId: body.cdId ?? null } }, 201);
 });
 
 app.get('/:id', async (c) => {
@@ -236,13 +245,17 @@ app.put('/:id', async (c) => {
 
     let totalCajas = 0;
     let totalMonto = 0;
+    let totalUc = 0;
     const detalleValues: any[] = [];
     for (const item of parsed.data.detalle) {
       const tipoCaja = tipoCajaMap.get(item.tipoCajaId);
       if (!tipoCaja) return c.json({ success: false, error: `Box type ${item.tipoCajaId} not found` }, 400);
+      const litrosPorCaja = tipoCaja.litrosPorCaja ?? 1;
+      const ucTotales = item.cantidad * litrosPorCaja;
       const subtotal = item.cantidad * tipoCaja.precioUnitario;
       totalCajas += item.cantidad;
       totalMonto += subtotal;
+      totalUc += ucTotales;
       detalleValues.push({
         id: crypto.randomUUID(),
         tenantId: payload.tenantId,
@@ -252,6 +265,8 @@ app.put('/:id', async (c) => {
         clienteInternoNombre: item.clienteInternoNombre ?? null,
         direccionInterno: item.direccionInterno ?? null,
         cantidad: item.cantidad,
+        litrosPorCaja,
+        ucTotales,
         precioUnitarioSnapshot: tipoCaja.precioUnitario,
         subtotal,
         createdAt: nowISO,
@@ -261,10 +276,10 @@ app.put('/:id', async (c) => {
 
     await db.insert(schema.detalleGd).values(detalleValues);
     await db.update(schema.guiasDespacho)
-      .set({ numeroGd: parsed.data.numeroGd ?? existing.numeroGd, fecha: parsed.data.fecha ?? existing.fecha, tipoGd: parsed.data.tipoGd ?? existing.tipoGd, observaciones: parsed.data.observaciones !== undefined ? parsed.data.observaciones : existing.observaciones, totalCajas, totalMonto, updatedAt: nowISO })
+      .set({ numeroGd: parsed.data.numeroGd ?? existing.numeroGd, fecha: parsed.data.fecha ?? existing.fecha, tipoGd: parsed.data.tipoGd ?? existing.tipoGd, observaciones: parsed.data.observaciones !== undefined ? parsed.data.observaciones : existing.observaciones, totalCajas, totalUc, totalPalets: body.totalPalets ?? existing.totalPalets ?? 0, totalMonto, cdId: body.cdId ?? existing.cdId ?? null, updatedAt: nowISO })
       .where(eq(schema.guiasDespacho.id, id));
 
-    return c.json({ success: true, data: { ...existing, numeroGd: parsed.data.numeroGd ?? existing.numeroGd, fecha: parsed.data.fecha ?? existing.fecha, tipoGd: parsed.data.tipoGd ?? existing.tipoGd, totalCajas, totalMonto, updatedAt: nowISO, detalle: detalleValues.map(d => ({ id: d.id, tipoCajaId: d.tipoCajaId, clienteInternoId: d.clienteInternoId, clienteInternoNombre: d.clienteInternoNombre, direccionInterno: d.direccionInterno, cantidad: d.cantidad, precioUnitarioSnapshot: d.precioUnitarioSnapshot, subtotal: d.subtotal })) } });
+    return c.json({ success: true, data: { ...existing, numeroGd: parsed.data.numeroGd ?? existing.numeroGd, fecha: parsed.data.fecha ?? existing.fecha, tipoGd: parsed.data.tipoGd ?? existing.tipoGd, totalCajas, totalUc, totalPalets: body.totalPalets ?? existing.totalPalets ?? 0, totalMonto, updatedAt: nowISO, detalle: detalleValues.map(d => ({ id: d.id, tipoCajaId: d.tipoCajaId, clienteInternoId: d.clienteInternoId, clienteInternoNombre: d.clienteInternoNombre, direccionInterno: d.direccionInterno, cantidad: d.cantidad, litrosPorCaja: d.litrosPorCaja, ucTotales: d.ucTotales, precioUnitarioSnapshot: d.precioUnitarioSnapshot, subtotal: d.subtotal })) } });
   } else {
     await db.update(schema.guiasDespacho)
       .set({ numeroGd: parsed.data.numeroGd ?? existing.numeroGd, fecha: parsed.data.fecha ?? existing.fecha, tipoGd: parsed.data.tipoGd ?? existing.tipoGd, observaciones: parsed.data.observaciones !== undefined ? parsed.data.observaciones : existing.observaciones, updatedAt: nowISO })

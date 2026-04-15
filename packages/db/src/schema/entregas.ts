@@ -17,6 +17,7 @@ export const entregas = sqliteTable('entregas', {
   cajasSolicitadas: integer('cajas_solicitadas').notNull().default(0),
   cajasEntregadas: integer('cajas_entregadas').notNull().default(0),
   cajasDevueltas: integer('cajas_devueltas').notNull().default(0),
+  ucEntregadas: real('uc_entregadas').notNull().default(0),
   montoCobrado: real('monto_cobrado').notNull().default(0),
   estado: text('estado').notNull().default('entregado'),
   motivoRechazo: text('motivo_rechazo'),

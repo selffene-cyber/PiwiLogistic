@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 import { tenants } from './tenants';
-import { camiones, trabajadores } from './maestros';
+import { camiones, trabajadores, centrosDistribucion } from './maestros';
 import { users } from './auth';
 import { tiposCaja } from './maestros';
 
@@ -31,7 +31,10 @@ export const guiasDespacho = sqliteTable('guias_despacho', {
   observaciones: text('observaciones'),
   estado: text('estado').notNull().default('abierta'),
   totalCajas: integer('total_cajas').default(0),
+  totalUc: real('total_uc').default(0),
+  totalPalets: integer('total_palets').default(0),
   totalMonto: real('total_monto').default(0),
+  cdId: text('cd_id').references(() => centrosDistribucion.id),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -45,6 +48,8 @@ export const detalleGd = sqliteTable('detalle_gd', {
   clienteInternoNombre: text('cliente_interno_nombre'),
   direccionInterno: text('direccion_interno'),
   cantidad: integer('cantidad').notNull(),
+  litrosPorCaja: real('litros_por_caja').notNull().default(1),
+  ucTotales: real('uc_totales').notNull().default(0),
   precioUnitarioSnapshot: real('precio_unitario_snapshot').notNull(),
   subtotal: real('subtotal').notNull(),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),

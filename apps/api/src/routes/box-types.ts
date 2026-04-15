@@ -12,12 +12,14 @@ const app = new Hono<{ Bindings: Env; Variables: { jwtPayload: JWTPayload } }>()
 const createBoxTypeSchema = z.object({
   nombre: z.string().min(1),
   precioUnitario: z.number().positive(),
+  litrosPorCaja: z.number().positive().default(1),
   activo: z.boolean().optional(),
 });
 
 const updateBoxTypeSchema = z.object({
   nombre: z.string().min(1).optional(),
   precioUnitario: z.number().positive().optional(),
+  litrosPorCaja: z.number().positive().optional(),
   activo: z.boolean().optional(),
 });
 
@@ -47,6 +49,7 @@ app.post('/', async (c) => {
     tenantId: payload.tenantId,
     nombre: parsed.data.nombre,
     precioUnitario: parsed.data.precioUnitario,
+    litrosPorCaja: parsed.data.litrosPorCaja,
     activo: parsed.data.activo ?? true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

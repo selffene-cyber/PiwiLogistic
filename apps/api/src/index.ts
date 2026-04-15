@@ -19,6 +19,8 @@ import bonusesRoutes from './routes/bonuses';
 import dashboardRoutes from './routes/dashboard';
 import fuelLoadRoutes from './routes/fuel-loads';
 import maintenanceRoutes from './routes/maintenance';
+import distributionCentersRoutes from './routes/distribution-centers';
+import operationsDashboardRoutes from './routes/operations-dashboard';
 
 const app = new Hono<{ Bindings: Env; Variables: { jwtPayload: JWTPayload } }>();
 
@@ -83,6 +85,8 @@ app.route('/api/bonuses', bonusesRoutes);
 app.route('/api/dashboard', dashboardRoutes);
 app.route('/api/fuel-loads', fuelLoadRoutes);
 app.route('/api/maintenance', maintenanceRoutes);
+app.route('/api/distribution-centers', distributionCentersRoutes);
+app.route('/api/operations-dashboard', operationsDashboardRoutes);
 
 app.onError((err, c) => {
   console.error('API Error:', err.message);

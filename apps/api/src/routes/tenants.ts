@@ -26,6 +26,7 @@ app.get('/current', async (c) => {
 const configUpdateSchema = z.object({
   diasHabilesMes: z.number().int().min(1).max(31).optional(),
   baseCajasBono: z.number().int().optional(),
+  valorUc: z.number().positive().optional(),
   horaInicioOperacion: z.string().optional(),
   horaCierreOperacion: z.string().optional(),
   bloquearEdicionRutaCerrada: z.boolean().optional(),

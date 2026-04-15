@@ -9,10 +9,11 @@ interface BoxType {
   nombre: string;
   descripcion: string | null;
   precioUnitario: number;
+  litrosPorCaja: number;
   activo: boolean;
 }
 
-const emptyForm = { nombre: '', descripcion: '', precioUnitario: '', activo: true };
+const emptyForm = { nombre: '', descripcion: '', precioUnitario: '', litrosPorCaja: '', activo: true };
 
 export default function BoxTypesListPage() {
   const queryClient = useQueryClient();
@@ -54,6 +55,7 @@ export default function BoxTypesListPage() {
       nombre: form.nombre,
       descripcion: form.descripcion || null,
       precioUnitario: Number(form.precioUnitario),
+      litrosPorCaja: Number(form.litrosPorCaja) || 1,
       activo: form.activo,
     };
     editing ? updateMut.mutate({ id: editing.id, data: payload }) : createMut.mutate(payload);
@@ -61,7 +63,7 @@ export default function BoxTypesListPage() {
 
   const startEdit = (b: BoxType) => {
     setEditing(b);
-    setForm({ nombre: b.nombre, descripcion: b.descripcion ?? '', precioUnitario: b.precioUnitario.toString(), activo: b.activo });
+    setForm({ nombre: b.nombre, descripcion: b.descripcion ?? '', precioUnitario: b.precioUnitario.toString(), litrosPorCaja: b.litrosPorCaja.toString(), activo: b.activo });
     setShowForm(true);
   };
 
@@ -87,6 +89,10 @@ export default function BoxTypesListPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Precio Unitario ($) *</label>
               <input type="number" required value={form.precioUnitario} onChange={(e) => setForm({ ...form, precioUnitario: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500" placeholder="500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Litros por Caja (UC) *</label>
+              <input type="number" step="0.1" required value={form.litrosPorCaja} onChange={(e) => setForm({ ...form, litrosPorCaja: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500" placeholder="24" />
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-600 mb-1">Descripcion</label>
@@ -121,6 +127,7 @@ export default function BoxTypesListPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripcion</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio Unitario</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Litros/Caja</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Accion</th>
                 </tr>
@@ -131,6 +138,7 @@ export default function BoxTypesListPage() {
                     <td className="px-4 py-3 text-sm font-medium">{b.nombre}</td>
                     <td className="px-4 py-3 text-sm">{b.descripcion ?? '-'}</td>
                     <td className="px-4 py-3 text-sm">{fmt(b.precioUnitario)}</td>
+                    <td className="px-4 py-3 text-sm">{b.litrosPorCaja} lt</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${b.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {b.activo ? 'Activo' : 'Inactivo'}
@@ -155,6 +163,7 @@ export default function BoxTypesListPage() {
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
                 <div><span className="text-gray-400">Descripcion:</span> {b.descripcion ?? '-'}</div>
                 <div><span className="text-gray-400">Precio:</span> {fmt(b.precioUnitario)}</div>
+                <div><span className="text-gray-400">Litros/Caja:</span> {b.litrosPorCaja} lt</div>
               </div>
               <div className="flex gap-2 mt-2 justify-end">
                 <button onClick={() => startEdit(b)} className="text-primary-600 hover:text-primary-800"><PencilIcon className="h-4 w-4" /></button>

@@ -21,6 +21,8 @@ async function calculateMetrics(db: ReturnType<typeof import('../lib/db')['getDb
       totalCajasDespachadas: 0,
       totalCajasEntregadas: 0,
       totalCajasDevueltas: 0,
+      totalUcPlanificadas: 0,
+      totalUcEntregadas: 0,
       totalIngresos: 0,
       totalCostos: 0,
       totalBonos: 0,
@@ -35,22 +37,26 @@ async function calculateMetrics(db: ReturnType<typeof import('../lib/db')['getDb
   const routeIds = routes.map((r) => r.id);
 
   let totalCajasDespachadas = 0;
+  let totalUcPlanificadas = 0;
   for (const routeId of routeIds) {
     const guides = await db.select().from(schema.guiasDespacho)
       .where(eq(schema.guiasDespacho.rutaId, routeId));
     for (const g of guides) {
       totalCajasDespachadas += g.totalCajas ?? 0;
+      totalUcPlanificadas += g.totalUc ?? 0;
     }
   }
 
   let totalCajasEntregadas = 0;
   let totalCajasDevueltas = 0;
+  let totalUcEntregadas = 0;
   let totalIngresos = 0;
   for (const routeId of routeIds) {
     const deliveries = await db.select().from(schema.entregas)
       .where(eq(schema.entregas.rutaId, routeId));
     totalCajasEntregadas += deliveries.reduce((sum, e) => sum + e.cajasEntregadas, 0);
     totalCajasDevueltas += deliveries.reduce((sum, e) => sum + e.cajasDevueltas, 0);
+    totalUcEntregadas += deliveries.reduce((sum, e) => sum + (e.ucEntregadas ?? 0), 0);
     totalIngresos += deliveries.reduce((sum, e) => sum + (e.montoCobrado ?? 0), 0);
   }
 
@@ -91,6 +97,8 @@ async function calculateMetrics(db: ReturnType<typeof import('../lib/db')['getDb
     totalCajasDespachadas,
     totalCajasEntregadas,
     totalCajasDevueltas,
+    totalUcPlanificadas,
+    totalUcEntregadas,
     totalIngresos,
     totalCostos,
     totalBonos,

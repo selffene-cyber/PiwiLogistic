@@ -16,6 +16,7 @@ interface Delivery {
   cajasSolicitadas: number;
   cajasEntregadas: number;
   cajasDevueltas: number;
+  ucEntregadas: number;
   montoCobrado: number;
   estado: string;
   motivoRechazo: string | null;
@@ -44,6 +45,7 @@ const INITIAL_FORM = {
   cajasSolicitadas: '',
   cajasEntregadas: '',
   cajasDevueltas: '0',
+  ucEntregadas: '0',
   montoCobrado: '0',
   estado: 'entregado',
   motivoRechazo: '',
@@ -149,6 +151,7 @@ export default function DeliveriesPage() {
       tipoCajaId: form.tipoCajaId || undefined,
       cajasSolicitadas: Number(form.cajasSolicitadas),
       cajasEntregadas: Number(form.cajasEntregadas),
+      ucEntregadas: Number(form.ucEntregadas) || 0,
       montoCobrado: Number(form.montoCobrado),
       estado: form.estado,
       motivoRechazo: needsMotivo ? form.motivoRechazo || undefined : undefined,
@@ -298,6 +301,10 @@ export default function DeliveriesPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Cajas Entregadas *</label>
               <input type="number" min="0" required value={form.cajasEntregadas} onChange={(e) => setForm({ ...form, cajasEntregadas: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">UC Entregadas *</label>
+              <input type="number" min="0" step="0.1" required value={form.ucEntregadas} onChange={(e) => setForm({ ...form, ucEntregadas: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Monto Cobrado ($) *</label>

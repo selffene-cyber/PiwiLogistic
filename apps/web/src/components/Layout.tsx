@@ -12,8 +12,9 @@ import {
   UsersIcon,
   Cog6ToothIcon,
   ArrowRightStartOnRectangleIcon,
-BanknotesIcon,
+  BanknotesIcon,
   Bars3Icon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeIconSolid } from '@heroicons/react/24/solid';
 import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
@@ -27,6 +28,7 @@ interface NavItem {
 
 const sidebarItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: HomeIcon },
+  { label: 'Operaciones', href: '/operations', icon: ChartBarIcon },
   { label: 'Rutas', href: '/routes', icon: MapIcon },
   { label: 'Guias', href: '/dispatch-guides', icon: ClipboardDocumentListIcon },
   { label: 'Clientes', href: '/clients', icon: UserGroupIcon },

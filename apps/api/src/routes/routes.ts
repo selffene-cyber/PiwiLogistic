@@ -275,6 +275,7 @@ app.post('/:id/close', async (c) => {
     .get();
 
   const diasHabiles = config?.diasHabilesMes ?? 26;
+  const valorUc = config?.valorUc ?? 200;
 
   const arriendoDiario = (config?.costoArriendoCamionMensual ?? 0) / diasHabiles;
   const mantencionDiaria = (config?.costoMantencionMensual ?? 0) / diasHabiles;
@@ -319,15 +320,18 @@ app.post('/:id/close', async (c) => {
     .where(eq(schema.guiasDespacho.rutaId, id));
 
   let totalCajasDespachadas = 0;
+  let totalUcPlanificadas = 0;
   let totalIngresos = 0;
   for (const guide of guides) {
     totalCajasDespachadas += guide.totalCajas ?? 0;
-    totalIngresos += guide.totalMonto ?? 0;
+    totalUcPlanificadas += guide.totalUc ?? 0;
+    totalIngresos += (guide.totalUc ?? 0) * valorUc;
   }
 
   const entregas = await db.select().from(schema.entregas)
     .where(eq(schema.entregas.rutaId, id));
   const totalCajasEntregadas = entregas.reduce((sum, e) => sum + e.cajasEntregadas, 0);
+  const totalUcEntregadas = entregas.reduce((sum, e) => sum + (e.ucEntregadas ?? 0), 0);
 
   const tiers = await db.select().from(schema.bonusTiers)
     .where(and(eq(schema.bonusTiers.tenantId, payload.tenantId), eq(schema.bonusTiers.activo, true)));

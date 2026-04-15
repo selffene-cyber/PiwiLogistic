@@ -29,6 +29,20 @@
       "when": 1776087394816,
       "tag": "0003_groovy_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1776090000000,
+      "tag": "0004_fleet_rutsap",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776170000000,
+      "tag": "0005_uc_model",
+      "breakpoints": true
     }
   ]
 }

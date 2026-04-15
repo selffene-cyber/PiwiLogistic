@@ -14,6 +14,7 @@ interface DeliveryForm {
   tipoCajaId: string;
   cajasSolicitadas: string;
   cajasEntregadas: string;
+  ucEntregadas: string;
   cajasDevueltas: string;
   montoCobrado: string;
   estado: string;
@@ -69,7 +70,7 @@ const fmt = (v: number) => new Intl.NumberFormat('es-CL', { style: 'currency', c
 
 const emptyDeliveryForm: DeliveryForm = {
   guiaDespachoId: '', clienteId: '', clienteNombreSnapshot: '', clienteDireccionSnapshot: '',
-  tipoCajaId: '', cajasSolicitadas: '', cajasEntregadas: '', cajasDevueltas: '0',
+  tipoCajaId: '', cajasSolicitadas: '', cajasEntregadas: '', ucEntregadas: '', cajasDevueltas: '0',
   montoCobrado: '0', estado: 'entregado', motivoRechazo: '', observaciones: '',
 };
 
@@ -228,6 +229,7 @@ export default function RouteDetailPage() {
       tipoCajaId: deliveryForm.tipoCajaId || undefined,
       cajasSolicitadas: Number(deliveryForm.cajasSolicitadas) || 0,
       cajasEntregadas: Number(deliveryForm.cajasEntregadas),
+      ucEntregadas: Number(deliveryForm.ucEntregadas) || 0,
       cajasDevueltas: Number(deliveryForm.cajasDevueltas) || 0,
       montoCobrado: Number(deliveryForm.montoCobrado) || 0,
       estado: deliveryForm.estado,
@@ -366,6 +368,10 @@ export default function RouteDetailPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Cajas Entregadas *</label>
               <input type="number" min="0" required value={deliveryForm.estado === 'rechazado' ? 0 : deliveryForm.cajasEntregadas} onChange={(e) => setDeliveryForm({ ...deliveryForm, cajasEntregadas: e.target.value })} readOnly={deliveryForm.estado === 'rechazado'} className={`w-full rounded-md border px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${deliveryForm.estado === 'rechazado' ? 'bg-gray-100 text-gray-400 border-gray-200' : 'border-gray-300'}`} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">UC Entregadas</label>
+              <input type="number" min="0" step="0.1" value={deliveryForm.ucEntregadas} onChange={(e) => setDeliveryForm({...deliveryForm, ucEntregadas: e.target.value})} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Cajas Devueltas</label>

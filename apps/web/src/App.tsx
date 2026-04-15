@@ -18,6 +18,7 @@ import DispatchGuideDetailPage from './pages/dispatch-guides/DispatchGuideDetail
 import DeliveriesPage from './pages/deliveries/DeliveriesPage';
 import BonusesPage from './pages/bonuses/BonusesPage';
 import SettingsPage from './pages/settings/SettingsPage';
+import OperationsDashboardPage from './pages/operations/OperationsDashboardPage';
 
 export default function App() {
   const loadUser = useAuthStore((s) => s.loadUser);
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/operations" element={<OperationsDashboardPage />} />
         <Route path="/routes" element={<RoutesListPage />} />
         <Route path="/routes/new" element={<NewRoutePage />} />
         <Route path="/routes/:id" element={<RouteDetailPage />} />

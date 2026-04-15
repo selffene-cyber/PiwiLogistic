@@ -13,6 +13,8 @@ interface DashboardMetrics {
   totalCajasDespachadas: number;
   totalCajasEntregadas: number;
   totalCajasDevueltas: number;
+  totalUcPlanificadas: number;
+  totalUcEntregadas: number;
   totalIngresos: number;
   totalCostos: number;
   totalBonos: number;
@@ -41,9 +43,9 @@ export default function DashboardPage() {
 
   const kpis = [
     { label: 'Cajas Entregadas', value: metrics?.totalCajasEntregadas ?? 0, icon: CubeIcon, color: 'text-primary-500', format: (v: number) => v.toLocaleString() },
+    { label: 'UC Entregadas', value: metrics?.totalUcEntregadas ?? 0, icon: ChartBarIcon, color: 'text-blue-500', format: (v: number) => v.toLocaleString() },
     { label: 'Ingresos', value: metrics?.totalIngresos ?? 0, icon: CurrencyDollarIcon, color: 'text-green-500', format: formatCurrency },
-    { label: 'Costos', value: metrics?.totalCostos ?? 0, icon: ArrowTrendingDownIcon, color: 'text-red-500', format: formatCurrency },
-    { label: 'Utilidad', value: metrics?.utilidad ?? 0, icon: ChartBarIcon, color: 'text-primary-600', format: formatCurrency },
+    { label: 'Utilidad', value: metrics?.utilidad ?? 0, icon: ArrowTrendingDownIcon, color: 'text-primary-600', format: formatCurrency },
   ];
 
   const performanceMetrics = metrics ? [
@@ -115,6 +117,14 @@ export default function DashboardPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Cajas Entregadas</span>
                     <span className="font-medium text-green-600">{metrics.totalCajasEntregadas.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">UC Entregadas</span>
+                    <span className="font-medium text-blue-600">{(metrics.totalUcEntregadas ?? 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">UC Planificadas</span>
+                    <span className="font-medium">{(metrics.totalUcPlanificadas ?? 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Cajas Devueltas</span>

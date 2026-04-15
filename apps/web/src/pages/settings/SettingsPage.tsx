@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/auth';
 interface TenantConfig {
   diasHabilesMes: number;
   baseCajasBono: number;
+  valorUc: number;
   horaInicioOperacion: string;
   horaCierreOperacion: string;
   bloquearEdicionRutaCerrada: boolean;
@@ -15,6 +16,15 @@ interface TenantConfig {
   costoArriendoCamionMensual: number;
   costoMantencionMensual: number;
   costoAdministracionMensual: number;
+}
+
+interface DistributionCenter {
+  id: string;
+  nombre: string;
+  codigo: string | null;
+  ciudad: string | null;
+  direccion: string | null;
+  activo: boolean;
 }
 
 interface UserItem {
@@ -39,6 +49,9 @@ export default function SettingsPage() {
   const [showUserForm, setShowUserForm] = useState(false);
   const [configForm, setConfigForm] = useState<TenantConfig | null>(null);
   const [userForm, setUserForm] = useState({ nombre: '', email: '', password: '', roleId: '' });
+  const [showDcForm, setShowDcForm] = useState(false);
+  const [editingDc, setEditingDc] = useState<DistributionCenter | null>(null);
+  const [dcForm, setDcForm] = useState({ nombre: '', codigo: '', ciudad: '', direccion: '' });
 
   const { data: tenant, isLoading: loadingTenant } = useQuery({
     queryKey: ['tenant'],
@@ -70,6 +83,26 @@ export default function SettingsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
+  const { data: distributionCenters } = useQuery({
+    queryKey: ['distribution-centers'],
+    queryFn: async () => { const res = await api.get('/api/distribution-centers'); return (await res.json()).data as DistributionCenter[]; },
+  });
+
+  const createDcMut = useMutation({
+    mutationFn: (data: any) => apiPost('/api/distribution-centers', data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['distribution-centers'] }); resetDcForm(); },
+  });
+
+  const updateDcMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiPut(`/api/distribution-centers/${id}`, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['distribution-centers'] }); resetDcForm(); },
+  });
+
+  const deleteDcMut = useMutation({
+    mutationFn: (id: string) => apiDel(`/api/distribution-centers/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['distribution-centers'] }),
+  });
+
   const startEditConfig = () => {
     if (tenant?.config) {
       setConfigForm({ ...tenant.config });
@@ -86,6 +119,20 @@ export default function SettingsPage() {
   const handleUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createUserMut.mutate({ ...userForm, activo: true, debeCambiarPassword: true });
+  };
+
+  const resetDcForm = () => { setShowDcForm(false); setEditingDc(null); setDcForm({ nombre: '', codigo: '', ciudad: '', direccion: '' }); };
+
+  const handleDcSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = { nombre: dcForm.nombre, codigo: dcForm.codigo || null, ciudad: dcForm.ciudad || null, direccion: dcForm.direccion || null };
+    editingDc ? updateDcMut.mutate({ id: editingDc.id, data: payload }) : createDcMut.mutate(payload);
+  };
+
+  const startEditDc = (dc: DistributionCenter) => {
+    setEditingDc(dc);
+    setDcForm({ nombre: dc.nombre, codigo: dc.codigo ?? '', ciudad: dc.ciudad ?? '', direccion: dc.direccion ?? '' });
+    setShowDcForm(true);
   };
 
   const isLoading = loadingTenant || loadingUsers;
@@ -115,6 +162,10 @@ export default function SettingsPage() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Base Cajas Bono</label>
                   <input type="number" value={configForm.baseCajasBono} onChange={(e) => setConfigForm({ ...configForm, baseCajasBono: Number(e.target.value) })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Valor UC ($)</label>
+                  <input type="number" value={configForm.valorUc} onChange={(e) => setConfigForm({ ...configForm, valorUc: Number(e.target.value) })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Hora Inicio</label>
@@ -161,6 +212,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div><span className="text-gray-500">Dias Habiles/Mes:</span> <span className="font-medium">{config.diasHabilesMes}</span></div>
               <div><span className="text-gray-500">Base Cajas Bono:</span> <span className="font-medium">{config.baseCajasBono}</span></div>
+              <div><span className="text-gray-500">Valor UC:</span> <span className="font-medium">{fmt(config.valorUc)}</span></div>
               <div><span className="text-gray-500">Horario:</span> <span className="font-medium">{config.horaInicioOperacion} - {config.horaCierreOperacion}</span></div>
               <div><span className="text-gray-500">Arriendo Camion:</span> <span className="font-medium">{fmt(config.costoArriendoCamionMensual)}</span></div>
               <div><span className="text-gray-500">Mantencion:</span> <span className="font-medium">{fmt(config.costoMantencionMensual)}</span></div>
@@ -258,6 +310,78 @@ export default function SettingsPage() {
             </div>
           ) : (
             <p className="text-sm text-gray-400 text-center py-4">No hay usuarios</p>
+          )}
+        </div>
+
+        <div className="bg-white rounded-md border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Centros de Distribucion</h2>
+            <button onClick={() => { resetDcForm(); setShowDcForm(true); }} className="inline-flex items-center gap-1 text-sm text-primary-600 hover:text-primary-800">
+              <PlusIcon className="h-4 w-4" /> Agregar
+            </button>
+          </div>
+
+          {showDcForm && (
+            <form onSubmit={handleDcSubmit} className="bg-gray-50 rounded-md p-3 mb-3 space-y-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nombre *</label>
+                  <input type="text" required value={dcForm.nombre} onChange={(e) => setDcForm({ ...dcForm, nombre: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Codigo</label>
+                  <input type="text" value={dcForm.codigo} onChange={(e) => setDcForm({ ...dcForm, codigo: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Ciudad</label>
+                  <input type="text" value={dcForm.ciudad} onChange={(e) => setDcForm({ ...dcForm, ciudad: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Direccion</label>
+                  <input type="text" value={dcForm.direccion} onChange={(e) => setDcForm({ ...dcForm, direccion: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={resetDcForm} className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">Cancelar</button>
+                <button type="submit" disabled={createDcMut.isPending || updateDcMut.isPending} className="flex-1 rounded-md bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+                  {createDcMut.isPending || updateDcMut.isPending ? 'Guardando...' : editingDc ? 'Guardar' : 'Crear'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {distributionCenters && distributionCenters.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Codigo</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ciudad</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Direccion</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Accion</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {distributionCenters.map((dc) => (
+                    <tr key={dc.id} className={!dc.activo ? 'bg-gray-50 text-gray-400' : ''}>
+                      <td className="px-4 py-3 text-sm font-medium">{dc.nombre}</td>
+                      <td className="px-4 py-3 text-sm">{dc.codigo ?? '-'}</td>
+                      <td className="px-4 py-3 text-sm">{dc.ciudad ?? '-'}</td>
+                      <td className="px-4 py-3 text-sm">{dc.direccion ?? '-'}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => startEditDc(dc)} className="text-primary-600 hover:text-primary-800"><PencilIcon className="h-4 w-4" /></button>
+                        {isAdmin && (
+                          <button onClick={() => { if (confirm('Eliminar centro?')) deleteDcMut.mutate(dc.id); }} className="text-red-500 hover:text-red-700 ml-2"><TrashIcon className="h-4 w-4" /></button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-4">No hay centros de distribucion</p>
           )}
         </div>
       </div>

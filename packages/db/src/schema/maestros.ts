@@ -82,6 +82,19 @@ export const tiposCaja = sqliteTable('tipos_caja', {
   tenantId: text('tenant_id').notNull().references(() => tenants.id),
   nombre: text('nombre').notNull(),
   precioUnitario: real('precio_unitario').notNull(),
+  litrosPorCaja: real('litros_por_caja').notNull().default(1),
+  activo: integer('activo', { mode: 'boolean' }).notNull().default(true),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const centrosDistribucion = sqliteTable('centros_distribucion', {
+  id: text('id').primaryKey(),
+  tenantId: text('tenant_id').notNull().references(() => tenants.id),
+  nombre: text('nombre').notNull(),
+  codigo: text('codigo'),
+  ciudad: text('ciudad'),
+  direccion: text('direccion'),
   activo: integer('activo', { mode: 'boolean' }).notNull().default(true),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),

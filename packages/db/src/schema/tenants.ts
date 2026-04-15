@@ -14,6 +14,7 @@ export const tenantConfig = sqliteTable('tenant_config', {
   tenantId: text('tenant_id').notNull().references(() => tenants.id),
   diasHabilesMes: integer('dias_habiles_mes').notNull().default(26),
   baseCajasBono: integer('base_cajas_bono'),
+  valorUc: real('valor_uc').notNull().default(200),
   horaInicioOperacion: text('hora_inicio_operacion').notNull().default('07:00'),
   horaCierreOperacion: text('hora_cierre_operacion').notNull().default('21:00'),
   bloquearEdicionRutaCerrada: integer('bloquear_edicion_ruta_cerrada', { mode: 'boolean' }).notNull().default(true),
