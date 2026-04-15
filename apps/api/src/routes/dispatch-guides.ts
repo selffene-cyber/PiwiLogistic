@@ -110,8 +110,8 @@ app.post('/', async (c) => {
     }
 
     const litrosPorCaja = tipoCaja.litrosPorCaja ?? 1;
-    const ucTotales = item.cantidad * litrosPorCaja;
-    const subtotal = item.cantidad * tipoCaja.precioUnitario;
+    const ucTotales = item.ucTotales ?? (item.cantidad * litrosPorCaja);
+    const subtotal = ucTotales * (tipoCaja.precioUnitario ?? 200);
     totalCajas += item.cantidad;
     totalMonto += subtotal;
     totalUc += ucTotales;
@@ -224,6 +224,7 @@ app.put('/:id', async (c) => {
     detalle: z.array(z.object({
       tipoCajaId: z.string().min(1),
       cantidad: z.number().int().positive(),
+      ucTotales: z.number().positive().optional(),
       clienteInternoId: z.string().nullable().optional(),
       clienteInternoNombre: z.string().nullable().optional(),
       direccionInterno: z.string().nullable().optional(),
@@ -251,8 +252,8 @@ app.put('/:id', async (c) => {
       const tipoCaja = tipoCajaMap.get(item.tipoCajaId);
       if (!tipoCaja) return c.json({ success: false, error: `Box type ${item.tipoCajaId} not found` }, 400);
       const litrosPorCaja = tipoCaja.litrosPorCaja ?? 1;
-      const ucTotales = item.cantidad * litrosPorCaja;
-      const subtotal = item.cantidad * tipoCaja.precioUnitario;
+      const ucTotales = item.ucTotales ?? (item.cantidad * litrosPorCaja);
+      const subtotal = ucTotales * (tipoCaja.precioUnitario ?? 200);
       totalCajas += item.cantidad;
       totalMonto += subtotal;
       totalUc += ucTotales;

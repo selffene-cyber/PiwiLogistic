@@ -27,7 +27,7 @@ interface DistributionCenter { id: string; nombre: string; codigo: string | null
 
 const fmt = (v: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(v) || 0);
 
-const emptyDetalle = { tipoCajaId: '', cantidad: '', clienteInternoId: '', clienteInternoNombre: '', direccionInterno: '' };
+const emptyDetalle = { tipoCajaId: '', cantidad: '', ucTotales: '', clienteInternoId: '', clienteInternoNombre: '', direccionInterno: '' };
 const emptyClientForm = { nombreComercial: '', rutSap: '', razonSocial: '', direccion: '', comuna: '', ciudad: '', telefono: '', tipoCliente: 'minorista' };
 
 export default function DispatchGuidesPage() {
@@ -122,6 +122,7 @@ export default function DispatchGuidesPage() {
       detalle: form.detalle.filter((d) => d.tipoCajaId && d.cantidad).map((d) => ({
         tipoCajaId: d.tipoCajaId,
         cantidad: Number(d.cantidad),
+        ucTotales: Number(d.ucTotales) || 0,
         clienteInternoId: d.clienteInternoId || null,
         clienteInternoNombre: d.clienteInternoNombre || null,
         direccionInterno: d.direccionInterno || null,
@@ -284,7 +285,7 @@ export default function DispatchGuidesPage() {
               <button type="button" onClick={addDetalle} className="text-xs text-primary-600 hover:text-primary-800 font-medium">+ Agregar linea</button>
             </div>
             {form.detalle.map((d, i) => (
-              <div key={i} className="grid grid-cols-6 gap-2 mb-2 items-end">
+              <div key={i} className="grid grid-cols-7 gap-2 mb-2 items-end">
                 <div className="col-span-2">
                   {i === 0 && <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Cliente Interno</label>}
                   <select value={d.clienteInternoId || ''} onChange={(e) => handleClientSelect(i, e.target.value)} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500">
@@ -308,10 +309,14 @@ export default function DispatchGuidesPage() {
                     ))}
                   </select>
                 </div>
+                <div>
+                  {i === 0 && <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Cajas</label>}
+                  <input type="number" placeholder="#" value={d.cantidad} onChange={(e) => updateDetalle(i, { cantidad: e.target.value })} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500" />
+                </div>
                 <div className="flex gap-1">
                   <div className="flex-1">
-                    {i === 0 && <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Cant.</label>}
-                    <input type="number" placeholder="#" value={d.cantidad} onChange={(e) => updateDetalle(i, { cantidad: e.target.value })} className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500" />
+                    {i === 0 && <label className="block text-[10px] font-medium text-gray-500 mb-0.5">UC</label>}
+                    <input type="number" placeholder="UC" value={d.ucTotales} onChange={(e) => updateDetalle(i, { ucTotales: e.target.value })} className="w-full rounded-md border border-blue-300 px-2 py-1.5 text-sm focus:border-primary-500" />
                   </div>
                   {form.detalle.length > 1 && <button type="button" onClick={() => removeDetalle(i)} className="text-red-500 hover:text-red-700 px-1 pb-1">X</button>}
                 </div>
